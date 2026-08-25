@@ -38,6 +38,18 @@ func TestParseRN(t *testing.T) {
 	assert.Equal(t, "1\r\n2\r\n", string(res))
 }
 
+func TestParseDropLastReturnKeepsLastDisplayLine(t *testing.T) {
+	const last = "ec9a-0c1e-d2d3   1          Learned          GE1/0/15                 Y"
+	raw := []byte("MAC Address      VLAN ID    State            Port/Nickname            Aging\n" +
+		"1c83-41cc-9f06   1          Learned          GE1/0/13                 Y\n" +
+		"988f-e06b-12a1   1          Learned          GE1/0/17                 Y\n" +
+		"bc0f-f342-7607   1          Learned          GE1/0/19                 Y\n" +
+		last + "\r")
+	res, err := ParseDropLastReturn(raw)
+	assert.NoError(t, err)
+	assert.Contains(t, string(res), last)
+}
+
 func TestParseRN2(t *testing.T) {
 	res, err := Parse([]byte("\rbad \n\r\r\r\rolo"))
 	assert.NoError(t, err)

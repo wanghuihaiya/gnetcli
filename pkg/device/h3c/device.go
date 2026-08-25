@@ -16,17 +16,21 @@ import (
 
 const (
 	questionExpression = `\n(?P<question>.*Continue\? \[Y/N\]:)$`
-	promptExpression   = `(\r\n|^|\x00)(?P<prompt>((\(M\))?[<\[][\w\-/]+[>\]]|\[[~*]?[/\w\-.:]+\]))$`
-	errorExpression    = `(` +
+	// User-view <hostname> and system-view [hostname]. Do not use [<\[]...[>\]] —
+	// that treats a MAC Port/Nickname like [CORE-SW] as a prompt and stops the read early.
+	promptExpression = `(\r\n|^|\x00)(?P<prompt>((\(M\))?<[/\w\-.:]+>|(\(M\))?\[[~*]?[/\w\-.:]+\]))\s*$`
+	errorExpression  = `(` +
 		`(\^\r\n)?( % )?Error:(?P<error>.+) at '\^' position\.` +
 		`|\r\n % (Unrecognized command|Too many parameters|Incomplete command) found at '\^' position\.` +
 		`)`
-	pagerExpression = `(?P<store>(\r\n|\n))?  ---- More ----$`
+	pagerExpression = `(?P<store>(\r\n|\n))?(?:\x1b\[[0-9;]*m)*\s*-{0,4}\s*More\s*-{0,4}(?:\x1b\[[0-9;]*m)*\s*$`
 )
 
 var autoCommands = []cmd.Cmd{
+	cmd.NewCmd("screen-length 0 temporary", cmd.WithErrorIgnore()),
 	cmd.NewCmd("screen-length disable", cmd.WithErrorIgnore()),
-	cmd.NewCmd("terminal mmi-mode enable", cmd.WithErrorIgnore()),
+	cmd.NewCmd("terminal echo-mode line", cmd.WithErrorIgnore()),
+	cmd.NewCmd("undo terminal monitor", cmd.WithErrorIgnore()),
 }
 
 func NewDevice(connector streamer.Connector, opts ...genericcli.GenericDeviceOption) genericcli.GenericDevice {

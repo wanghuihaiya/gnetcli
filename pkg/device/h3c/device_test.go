@@ -27,3 +27,19 @@ func TestDevicePrompt(t *testing.T) {
 	}
 	testutils.ExprTester(t, errorCases, promptExpression)
 }
+
+func TestDevicePromptNotMACNickname(t *testing.T) {
+	testutils.ExprTesterFalse(t, [][]byte{
+		[]byte("c0ea-c365-7819   5          Learned          [CORE-SW]                  Y"),
+	}, promptExpression)
+}
+
+func TestDevicePager(t *testing.T) {
+	testutils.ExprTester(t, [][]byte{
+		[]byte("  ---- More ----"),
+		[]byte("\n  ---- More ----"),
+		[]byte("\r\n ---- More ----"),
+		[]byte("-- More --"),
+		[]byte("\n---- More ----"),
+	}, pagerExpression)
+}

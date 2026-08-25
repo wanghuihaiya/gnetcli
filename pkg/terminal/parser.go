@@ -45,15 +45,18 @@ func Parse(data []byte) ([]byte, error) {
 	return parser.parse()
 }
 
-// ParseDropLastReturn evaluates ANSI escape sequences and apply logic related to prompt cut
+// ParseDropLastReturn evaluates ANSI escape sequences after the prompt is stripped.
+// H3C/VRP often ends the last display row with a bare CR (prompt was on the same line).
+// Completing that CR to CRLF keeps the row; otherwise Parse() treats it as an overwrite
+// and drops the last MAC/ARP/interface line.
 func ParseDropLastReturn(data []byte) ([]byte, error) {
-	res, err := Parse(data)
-	// It's implied that after the last \r some text is cut beforehand
-	// Delete whole line
-	if len(res) > 0 && res[len(res)-1] == '\r' {
-		res = trimLastLine(res)
+	if n := len(data); n > 0 && data[n-1] == RETURN {
+		tmp := make([]byte, n+1)
+		copy(tmp, data)
+		tmp[n] = NEWLINE
+		data = tmp
 	}
-	return res, err
+	return Parse(data)
 }
 
 func (m *Parser) consume() (byte, error) {
@@ -206,13 +209,4 @@ func min(a, b int) int {
 		return a
 	}
 	return b
-}
-
-func trimLastLine(input []byte) []byte {
-	lastNL := bytes.LastIndexByte(input, NEWLINE)
-	var res []byte
-	if lastNL > -1 {
-		res = input[0 : lastNL+1]
-	}
-	return res
 }
